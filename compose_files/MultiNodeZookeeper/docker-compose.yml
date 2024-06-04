@@ -1,0 +1,108 @@
+version: '3.1'
+
+networks:
+  app-tier:
+    driver: bridge
+
+services:
+  zookeeper:
+    domainname: "zookeeper"
+    container_name: "zookeeper"
+    image: docker.io/bitnami/zookeeper:latest
+    networks:
+      - app-tier
+    ports:
+      - "2181:2181"
+    environment:
+      - ALLOW_ANONYMOUS_LOGIN=yes
+
+  kafka-0-z:
+    image: docker.io/bitnami/kafka:3.3.2
+    networks:
+      - app-tier
+    ports:
+      - "9092:9092"
+      - "9093:9093"
+    environment:
+      - KAFKA_BROKER_ID=0
+      - KAFKA_ZOOKEEPER_CONNECT=zookeeper:2181
+      - KAFKA_CFG_ZOOKEEPER_CONNECT=zookeeper:2181
+      - KAFKA_CFG_LISTENERS=INSIDE://:9092,OUTSIDE://:9093
+      - KAFKA_CFG_ADVERTISED_LISTENERS=INSIDE://kafka-0-z:9092,OUTSIDE://localhost:9093
+      - KAFKA_CFG_LISTENER_SECURITY_PROTOCOL_MAP=INSIDE:PLAINTEXT,OUTSIDE:PLAINTEXT
+      - KAFKA_CFG_INTER_BROKER_LISTENER_NAME=INSIDE
+      - ALLOW_PLAINTEXT_LISTENER=yes
+      - KAFKA_CFG_OFFSETS_TOPIC_REPLICATION_FACTOR=3
+      - KAFKA_CFG_TRANSACTION_STATE_LOG_REPLICATION_FACTOR=3
+      - KAFKA_CFG_TRANSACTION_STATE_LOG_MIN_ISR=2
+    volumes:
+      - kafka_0_data_z:/bitnami/kafka
+
+  kafka-1-z:
+    image: docker.io/bitnami/kafka:3.3.2
+    networks:
+      - app-tier
+    ports:
+      - "9094:9092"
+      - "9095:9093"
+    environment:
+      - KAFKA_BROKER_ID=1
+      - KAFKA_ZOOKEEPER_CONNECT=zookeeper:2181
+      - KAFKA_CFG_ZOOKEEPER_CONNECT=zookeeper:2181
+      - KAFKA_CFG_LISTENERS=INSIDE://:9092,OUTSIDE://:9093
+      - KAFKA_CFG_ADVERTISED_LISTENERS=INSIDE://kafka-1-z:9092,OUTSIDE://localhost:9095
+      - KAFKA_CFG_LISTENER_SECURITY_PROTOCOL_MAP=INSIDE:PLAINTEXT,OUTSIDE:PLAINTEXT
+      - KAFKA_CFG_INTER_BROKER_LISTENER_NAME=INSIDE
+      - ALLOW_PLAINTEXT_LISTENER=yes
+      - KAFKA_CFG_OFFSETS_TOPIC_REPLICATION_FACTOR=3
+      - KAFKA_CFG_TRANSACTION_STATE_LOG_REPLICATION_FACTOR=3
+      - KAFKA_CFG_TRANSACTION_STATE_LOG_MIN_ISR=2
+    volumes:
+      - kafka_1_data_z:/bitnami/kafka
+
+  kafka-2-z:
+    image: docker.io/bitnami/kafka:3.3.2
+    networks:
+      - app-tier
+    ports:
+      - "9096:9092"
+      - "9097:9093"
+    environment:
+      - KAFKA_BROKER_ID=2
+      - KAFKA_ZOOKEEPER_CONNECT=zookeeper:2181
+      - KAFKA_CFG_ZOOKEEPER_CONNECT=zookeeper:2181
+      - KAFKA_CFG_LISTENERS=INSIDE://:9092,OUTSIDE://:9093
+      - KAFKA_CFG_ADVERTISED_LISTENERS=INSIDE://kafka-2-z:9092,OUTSIDE://localhost:9097
+      - KAFKA_CFG_LISTENER_SECURITY_PROTOCOL_MAP=INSIDE:PLAINTEXT,OUTSIDE:PLAINTEXT
+      - KAFKA_CFG_INTER_BROKER_LISTENER_NAME=INSIDE
+      - ALLOW_PLAINTEXT_LISTENER=yes
+      - KAFKA_CFG_OFFSETS_TOPIC_REPLICATION_FACTOR=3
+      - KAFKA_CFG_TRANSACTION_STATE_LOG_REPLICATION_FACTOR=3
+      - KAFKA_CFG_TRANSACTION_STATE_LOG_MIN_ISR=2
+    volumes:
+      - kafka_2_data_z:/bitnami/kafka
+
+  kafka-ui-z:
+    image: "provectuslabs/kafka-ui:latest"
+    networks:
+      - app-tier
+    container_name: "kafka-ui-z"
+    ports:
+      - "8080:8080"
+    restart: "always"
+    environment:
+      - DYNAMIC_CONFIG_ENABLED=true
+      - KAFKA_CLUSTERS_0_NAME=wizard_test
+      - KAFKA_CLUSTERS_0_BOOTSTRAPSERVERS=kafka-0-z:9092,kafka-1-z:9094,kafka-1-z:9096
+    depends_on:
+      - kafka-0-z
+      - kafka-1-z
+      - kafka-2-z
+
+volumes:
+  kafka_0_data_z:
+    driver: local
+  kafka_1_data_z:
+    driver: local
+  kafka_2_data_z:
+    driver: local
